@@ -1,0 +1,155 @@
+'use client'
+import dynamic from 'next/dynamic'
+import { Suspense, useState } from 'react'
+import { StatsGrid, PerfumeGrid, FilterTabs } from '@/components/ui'
+import { LoadingSpinner } from '@/components/LoadingSpinner'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+import { 
+  getFavoritesPerfumes, 
+  getDislikedPerfumes, 
+  getWishlistPerfumes,
+  defaultRadarData,
+  defaultUserStats
+} from '@/lib/data/perfumes'
+
+const RadarChart = dynamic(() => import('@/components/ui/RadarChart').then(mod => ({ default: mod.RadarChart })), { 
+  ssr: false,
+  loading: () => <div className="w-[400px] h-[400px] flex items-center justify-center"><LoadingSpinner size="md" /></div>
+})
+
+export default function Dashboard() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const [activeTab, setActiveTab] = useState('favorites')
+
+  // Redirect to login if not authenticated
+  if (status === 'unauthenticated') {
+    router.push('/login?callbackUrl=/dashboard')
+    return (
+      <div className="min-h-screen bg-[#F2F0EB]/50 flex items-center justify-center">
+        <LoadingSpinner message="جاري التحويل..." />
+      </div>
+    )
+  }
+
+  // Show loading while checking session
+  if (status === 'loading' || !session) {
+    return (
+      <div className="min-h-screen bg-[#F2F0EB]/50 flex items-center justify-center">
+        <LoadingSpinner message="جاري التحميل..." />
+      </div>
+    )
+  }
+
+  const favoritesPerfumes = getFavoritesPerfumes()
+  const dislikedPerfumes = getDislikedPerfumes()
+  const wishlistPerfumes = getWishlistPerfumes()
+
+  const tabs = [
+    { id: 'favorites', label: '💜 المفضلة', icon: 'favorite', count: favoritesPerfumes.length },
+    { id: 'disliked', label: '❌ المكروهة', icon: 'thumb_down', count: dislikedPerfumes.length },
+    { id: 'wishlist', label: '💾 قائمة الرغبات', icon: 'bookmark', count: wishlistPerfumes.length }
+  ]
+
+  const getCurrentPerfumes = () => {
+    switch (activeTab) {
+      case 'favorites':
+        return favoritesPerfumes
+      case 'disliked':
+        return dislikedPerfumes
+      case 'wishlist':
+        return wishlistPerfumes
+      default:
+        return favoritesPerfumes
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-[#F2F0EB]/50" dir="rtl">
+      {/* Hero Header with User Info */}
+      <header className="bg-gradient-to-r from-[#c0841a] to-[#a07215] text-white p-8 rounded-b-3xl shadow-2xl mb-8">
+        <div className="max-w-6xl mx-auto flex items-center gap-6 flex-wrap">
+          {session.user?.image ? (
+            <img 
+              src={session.user.image} 
+              alt={session.user.name || 'Profile'}
+              className="w-20 h-20 rounded-full ring-4 ring-white/50 shadow-lg object-cover"
+            />
+          ) : (
+            <div className="w-20 h-20 rounded-full ring-4 ring-white/50 shadow-lg bg-white/20 flex items-center justify-center text-3xl font-bold">
+              {(session.user?.name || 'U')[0].toUpperCase()}
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <h1 className="text-4xl font-bold mb-2 truncate">مرحباً {session.user?.name || 'مستخدم'}</h1>
+            <p className="opacity-90 text-lg truncate">{session.user?.email}</p>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-6xl mx-auto space-y-8 px-6 pb-12">
+        {/* Header Card */}
+        <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-[#F2F0EB]/50">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-r from-[#10B981] to-emerald-500 rounded-2xl flex items-center justify-center">
+                <span className="text-2xl">👋</span>
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-[#5B4233] leading-tight">لوحة التحكم</h1>
+                <p className="text-[#5B4233]/70">بصمتك العطرية مكتملة ✅</p>
+              </div>
+            </div>
+            <div className="text-left">
+              <div className="text-2xl font-bold text-[#10B981] mb-1">{defaultUserStats.totalMatches} تطابق</div>
+              <div className="text-sm text-[#5B4233]/60">عطور محفوظة</div>
+            </div>
+          </div>
+          <StatsGrid stats={[
+            { label: 'عمليات البحث', value: defaultUserStats.searches, icon: 'search' },
+            { label: 'محفوظات', value: defaultUserStats.savedPerfumes, icon: 'bookmark' },
+            { label: 'تطابقات', value: defaultUserStats.totalMatches, icon: 'favorite' },
+            { label: 'عينات مطلوبة', value: defaultUserStats.samples, icon: 'science' }
+          ]} />
+        </div>
+
+        {/* Dashboard Tabs */}
+        <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-6 shadow-2xl border border-[#F2F0EB]/50">
+          <FilterTabs 
+            tabs={tabs}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            className="mb-6"
+          />
+
+          {/* Tab Content */}
+          <div className="mt-6">
+            <h2 className="text-xl font-bold text-[#5B4233] mb-6">
+              {activeTab === 'favorites' && '💜 عطورك المفضلة'}
+              {activeTab === 'disliked' && '❌ العطور المكروهة'}
+              {activeTab === 'wishlist' && '💾 قائمة الرغبات'}
+            </h2>
+            <PerfumeGrid 
+              perfumes={getCurrentPerfumes()} 
+              columns={4}
+              onPerfumeClick={(perfume) => {
+                router.push(`/perfume/${perfume.id}`)
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Radar Chart */}
+        <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-[#F2F0EB]/50">
+          <h2 className="text-2xl font-bold text-[#5B4233] mb-8 text-center">بصمتك العطرية</h2>
+          <div className="flex justify-center">
+            <Suspense fallback={<div className="w-[400px] h-[400px] flex items-center justify-center"><LoadingSpinner size="md" /></div>}>
+              <RadarChart data={defaultRadarData} />
+            </Suspense>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

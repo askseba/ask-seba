@@ -1,0 +1,89 @@
+'use client'
+import React from 'react'
+import Image from 'next/image'
+
+interface Perfume {
+  id: string
+  name: string
+  brand: string
+  image: string
+  matchPercentage?: number
+  price?: number
+}
+
+interface PerfumeGridProps {
+  perfumes: Perfume[]
+  columns?: 2 | 3 | 4
+  onPerfumeClick?: (perfume: Perfume) => void
+  className?: string
+}
+
+export function PerfumeGrid({ 
+  perfumes, 
+  columns = 3,
+  onPerfumeClick,
+  className = '' 
+}: PerfumeGridProps) {
+  const gridCols = {
+    2: 'grid-cols-2',
+    3: 'grid-cols-2 md:grid-cols-3',
+    4: 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
+  }
+
+  return (
+    <div className={`grid ${gridCols[columns]} gap-4 ${className}`}>
+      {perfumes.map((perfume) => (
+        <div
+          key={perfume.id}
+          onClick={() => onPerfumeClick?.(perfume)}
+          className="bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-100 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl cursor-pointer group"
+        >
+          {/* Image */}
+          <div className="aspect-[3/4] relative overflow-hidden bg-gradient-to-b from-gray-100 to-gray-200">
+            <Image
+              src={perfume.image}
+              alt={`${perfume.name} - ${perfume.brand}`}
+              fill
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
+              sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            />
+            
+            {/* Match Badge */}
+            {perfume.matchPercentage !== undefined && (
+              <div className="absolute top-2 left-2 z-10">
+                <div className="bg-black/40 backdrop-blur-md border border-white/10 text-white text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-yellow-400 text-sm">analytics</span>
+                  <span dir="ltr">{perfume.matchPercentage}% Match</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Content */}
+          <div className="p-4 flex flex-col gap-2">
+            <div className="flex justify-between items-start">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-neutral-900 text-lg font-bold leading-tight truncate">
+                  {perfume.name}
+                </h3>
+                <p className="text-neutral-500 text-sm mt-1">{perfume.brand}</p>
+              </div>
+              <button className="text-neutral-400 hover:text-red-500 transition-colors ml-2">
+                <span className="material-symbols-outlined text-xl">favorite_border</span>
+              </button>
+            </div>
+
+            {perfume.price !== undefined && (
+              <div className="flex items-baseline gap-1 mt-2">
+                <span className="text-primary text-xl font-bold">{perfume.price}</span>
+                <span className="text-primary text-sm font-bold">ر.س</span>
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export default PerfumeGrid
