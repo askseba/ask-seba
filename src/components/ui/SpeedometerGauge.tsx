@@ -1,7 +1,7 @@
 // src/components/ui/SpeedometerGauge.tsx
 'use client'
 import { motion } from 'framer-motion'
-import { useEffect, useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
 
 interface SpeedometerProps {
   score: number
@@ -11,11 +11,14 @@ interface SpeedometerProps {
 export function SpeedometerGauge({ score, status }: SpeedometerProps) {
   const [animatedScore, setAnimatedScore] = useState(0)
   
-  useEffect(() => {
+  // Animation initialization - using useLayoutEffect for synchronous DOM updates
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useLayoutEffect(() => {
     setAnimatedScore(0)
     const timer = setTimeout(() => setAnimatedScore(score), 100)
     return () => clearTimeout(timer)
   }, [score])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const getStatusText = () => {
     if (score < 60) return '⚠️ تحذير حساسية'

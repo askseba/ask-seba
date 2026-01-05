@@ -1,5 +1,5 @@
 'use client'
-import { PerfumeGrid, PerfumeCard } from '@/components/ui'
+import { PerfumeCard } from '@/components/ui'
 import Link from 'next/link'
 import { getFeaturedPerfumes } from '@/lib/data/perfumes'
 

@@ -1,5 +1,17 @@
 import React, { useState } from 'react';
 
+interface PerfumeCardProps {
+  variant?: 'bestseller' | 'on-sale' | 'just-arrived'
+  title?: string
+  brand?: string
+  matchPercentage?: number
+  price?: number
+  originalPrice?: number | null | undefined
+  imageUrl?: string
+  description?: string
+  isSafe?: boolean
+}
+
 const PerfumeCard = ({ 
   variant = 'bestseller',
   title = 'عود ملكي فاخر',
@@ -10,7 +22,7 @@ const PerfumeCard = ({
   imageUrl = 'https://lh3.googleusercontent.com/aida-public/AB6AXuALBOCEY2KBnfmkKMp5T6wk7_tpNpYd3gxmLv44JaVnWWHheh5gIzBLiaDI5fKGIARWSWatCeEb4azL5A17HBLlqMqHVuK3B3mVJP3jO-BI7w6oAg5ou-jeK7DuIMj6Fd_QONDQwXlpOjjSEcE84Knt_5z4mBLf1A7QxpZMHAyHOw0YtNyEweRUfJ7Tsxs967MWYSrjlI3dDLoQqWt7pg8oDqHBhO1T_uX29W1QDSJ9EaqoM6FdQ8hSW7f4MY2a-H26q7iDJrV4WnI3',
   description = 'تولیفة ساحرة تجمع بین دهن العود الكمبودي والمسك الأسود.',
   isSafe = true
-}) => {
+}: PerfumeCardProps) => {
   const getVariantConfig = () => {
     switch(variant) {
       case 'bestseller':
@@ -171,9 +183,9 @@ const PerfumeCard = ({
 
 // Demo Component
 const PerfumeCardDemo = () => {
-  const [selectedVariant, setSelectedVariant] = useState('bestseller');
+  const [selectedVariant, setSelectedVariant] = useState<'bestseller' | 'on-sale' | 'just-arrived'>('bestseller');
 
-  const variants = [
+  const variants: Array<{ id: 'bestseller' | 'on-sale' | 'just-arrived'; title: string; props: PerfumeCardProps }> = [
     {
       id: 'bestseller',
       title: 'Bestseller (90% Match)',
@@ -248,7 +260,9 @@ const PerfumeCardDemo = () => {
 
       {/* Active Card */}
       <div className="mb-12">
-        <PerfumeCard {...(variants.find(v => v.id === selectedVariant)?.props as any)} />
+        {variants.find(v => v.id === selectedVariant)?.props && (
+          <PerfumeCard {...variants.find(v => v.id === selectedVariant)!.props} />
+        )}
       </div>
 
       {/* All Variants Preview */}
@@ -257,7 +271,7 @@ const PerfumeCardDemo = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {variants.map(v => (
             <div key={v.id} className="flex flex-col gap-3">
-              <PerfumeCard {...(v.props as any)} />
+              <PerfumeCard {...v.props} />
               <p className="text-xs text-[#5B4233]/60 font-medium text-center">{v.title}</p>
             </div>
           ))}
@@ -271,7 +285,7 @@ const PerfumeCardDemo = () => {
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <code className="text-xs bg-white px-2 py-1 rounded">variant</code>
-              <p className="text-[#5B4233]/70 mt-1">"bestseller" | "on-sale" | "just-arrived"</p>
+              <p className="text-[#5B4233]/70 mt-1">{'"'}bestseller{'"'} | {'"'}on-sale{'"'} | {'"'}just-arrived{'"'}</p>
             </div>
             <div>
               <code className="text-xs bg-white px-2 py-1 rounded">matchPercentage</code>

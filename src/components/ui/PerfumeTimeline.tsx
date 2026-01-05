@@ -46,10 +46,9 @@ export function PerfumeTimeline({ stages, className = '' }: PerfumeTimelineProps
     }
   }
 
-  const renderProgressCircle = (stage: TimelineStage, index: number) => {
+  const renderProgressCircle = (stage: TimelineStage) => {
     const config = getStatusConfig(stage.status)
     const circumference = 2 * Math.PI * 50 // r=50
-    const strokeDashoffset = circumference - (stage.score / 100) * circumference
 
     return (
       <svg 
@@ -142,7 +141,7 @@ export function PerfumeTimeline({ stages, className = '' }: PerfumeTimelineProps
           >
             {/* SVG ProgressCircle 200x120 */}
             <div className="flex-shrink-0 hidden sm:block">
-              {renderProgressCircle(stage, index)}
+              {renderProgressCircle(stage)}
             </div>
             
             {/* Mobile: Smaller circle */}
