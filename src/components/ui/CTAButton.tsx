@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 import Link from "next/link"
-import { ButtonHTMLAttributes, forwardRef } from "react"
+import React, { forwardRef } from "react"
 import { Loader2 } from "lucide-react"
 
 const ctaVariants = cva(
@@ -30,7 +30,9 @@ const ctaVariants = cva(
   }
 )
 
-interface CTAButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'href'>, VariantProps<typeof ctaVariants> {
+interface CTAButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof ctaVariants> {
   href?: string
   isLoading?: boolean
 }
@@ -47,9 +49,11 @@ const CTAButton = forwardRef<HTMLButtonElement, CTAButtonProps>(
     const buttonClasses = cn(ctaVariants({ variant, size, className }))
 
     if (href) {
+      // Link accepts most HTML anchor attributes, omit button-specific props
+      const linkProps = { ...props } as Omit<React.ComponentPropsWithoutRef<typeof Link>, 'href' | 'className'>
       return (
         <motion.div whileHover={!isLoading ? { scale: 1.02 } : {}} whileTap={!isLoading ? { scale: 0.98 } : {}}>
-          <Link href={href} className={buttonClasses} {...(props as any)}>
+          <Link href={href} className={buttonClasses} {...linkProps}>
             {buttonContent}
           </Link>
         </motion.div>
