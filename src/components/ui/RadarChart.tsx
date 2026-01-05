@@ -1,195 +1,154 @@
-'use client'
-import React, { useState } from 'react'
+"use client"
+import { motion } from "framer-motion"
+import { useMemo } from "react"
 
-interface RadarDataPoint {
-  label: string
-  value: number
-  color?: string
+interface RadarPoint {
+  name: string
+  score: number
+  color: string
 }
 
 interface RadarChartProps {
-  data: RadarDataPoint[]
-  maxValue?: number
+  data?: RadarPoint[]
   size?: number
-  className?: string
 }
 
-export function RadarChart({ 
-  data, 
-  maxValue = 100, 
-  size = 320,
-  className = ''
-}: RadarChartProps) {
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+const DEFAULT_SAMPLE_DATA: RadarPoint[] = [
+  { name: "فلورال", score: 85, color: "#10B981" },
+  { name: "خشبي", score: 75, color: "#F59E0B" },
+  { name: "حمضيات", score: 30, color: "#EF4444" },
+  { name: "شرقي", score: 45, color: "#3B82F6" },
+  { name: "منعش", score: 60, color: "#8B5CF6" },
+  { name: "توابل", score: 70, color: "#EC4899" },
+]
 
-  // Default 6-axis radar chart (hexagon)
-  const axes = data.length || 6
-  const center = 50
-  const radius = 40
+export function RadarChart({ data, size = 400 }: RadarChartProps) {
+  const points = useMemo(() => {
+    const dataset = data || DEFAULT_SAMPLE_DATA
+    const radius = size * 0.4
+    const center = size / 2
+    return dataset.map((item, i) => {
+      const angle = (i / dataset.length) * 2 * Math.PI - Math.PI / 2
+      return {
+        ...item,
+        x: center + (item.score / 100) * radius * Math.cos(angle),
+        y: center + (item.score / 100) * radius * Math.sin(angle),
+        angle,
+      }
+    })
+  }, [data, size])
 
-  // Calculate positions for each axis
-  const getAxisPoint = (index: number, value: number) => {
-    const angle = (index * 360) / axes - 90 // Start from top
-    const radian = (angle * Math.PI) / 180
-    const distance = (value / maxValue) * radius
-    const x = center + distance * Math.cos(radian)
-    const y = center + distance * Math.sin(radian)
-    return { x, y }
-  }
-
-  // Generate polygon points for the data
-  const polygonPoints = data
-    .map((point, index) => getAxisPoint(index, point.value))
-    .map(({ x, y }) => `${x},${y}`)
-    .join(' ')
-
-  // Generate grid circles
-  const gridLevels = 3
-  const gridPolygons = Array.from({ length: gridLevels }, (_, i) => {
-    const level = (i + 1) / gridLevels
-    const levelRadius = radius * level
-    const points = Array.from({ length: axes }, (_, j) => {
-      const angle = (j * 360) / axes - 90
-      const radian = (angle * Math.PI) / 180
-      const x = center + levelRadius * Math.cos(radian)
-      const y = center + levelRadius * Math.sin(radian)
-      return `${x},${y}`
-    }).join(' ')
-    return points
-  })
-
-  // Generate axis lines
-  const axisLines = Array.from({ length: axes }, (_, i) => {
-    const angle = (i * 360) / axes - 90
-    const radian = (angle * Math.PI) / 180
-    const x = center + radius * Math.cos(radian)
-    const y = center + radius * Math.sin(radian)
-    return { x1: center, y1: center, x2: x, y2: y }
-  })
-
-  // Get label positions
-  const getLabelPosition = (index: number) => {
-    const angle = (index * 360) / axes - 90
-    const radian = (angle * Math.PI) / 180
-    const labelRadius = radius + 8
-    const x = center + labelRadius * Math.cos(radian)
-    const y = center + labelRadius * Math.sin(radian)
-    
-    let alignment: { x: string; y: string } = { x: '50%', y: '50%' }
-    if (Math.abs(angle) < 10 || Math.abs(angle) > 170) {
-      alignment = { x: '50%', y: '0%' } // Top
-    } else if (Math.abs(angle) > 80 && Math.abs(angle) < 100) {
-      alignment = { x: '50%', y: '100%' } // Bottom
-    } else if (angle > 0 && angle < 90) {
-      alignment = { x: '0%', y: '0%' } // Top-right
-    } else if (angle > 90 && angle < 180) {
-      alignment = { x: '0%', y: '100%' } // Bottom-right
-    } else if (angle < 0 && angle > -90) {
-      alignment = { x: '100%', y: '0%' } // Top-left
-    } else {
-      alignment = { x: '100%', y: '100%' } // Bottom-left
-    }
-
-    // Fixed duplicate x by spreading alignment first
-    return {
-      ...alignment,
-      x: `${x}%`,
-      y: `${y}%`
-    }
-  }
+  const radius = size * 0.4
+  const polygonPath = points.map(p => `${p.x},${p.y}`).join(" ")
 
   return (
-    <div 
-      className={`relative w-full aspect-square max-w-[${size}px] mx-auto bg-white rounded-2xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.05)] border border-gray-100 flex flex-col items-center justify-center overflow-hidden ${className}`}
-      style={{ maxWidth: `${size}px` }}
-    >
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent pointer-events-none"></div>
-      
-      {/* SVG Chart */}
-      <div className="relative w-full h-full max-w-[320px] max-h-[320px] flex items-center justify-center p-6">
-        <svg 
-          className="w-full h-full overflow-visible" 
-          viewBox="0 0 100 100"
-        >
-          {/* Grid circles */}
-          <g className="stroke-slate-200 fill-none" strokeWidth="0.5">
-            {gridPolygons.map((points, i) => (
-              <polygon key={i} points={points} />
-            ))}
-            
-            {/* Axis lines */}
-            {axisLines.map((line, i) => (
-              <line
-                key={i}
-                x1={line.x1}
-                y1={line.y1}
-                x2={line.x2}
-                y2={line.y2}
-              />
-            ))}
-          </g>
-
-          {/* Data polygon */}
-          <polygon
-            className="stroke-primary fill-primary/20 filter drop-shadow-[0_0_8px_rgba(236,156,19,0.3)]"
-            points={polygonPoints}
-            strokeLinejoin="round"
-            strokeWidth="1.5"
-          />
-
-          {/* Data points */}
-          {data.map((point, index) => {
-            const { x, y } = getAxisPoint(index, point.value)
-            const isHovered = hoveredIndex === index
-            return (
-              <g key={index}>
-                <circle
-                  cx={x}
-                  cy={y}
-                  r={isHovered ? 3 : 2}
-                  className="fill-white stroke-primary transition-all"
-                  strokeWidth={isHovered ? 2 : 1}
-                  onMouseEnter={() => setHoveredIndex(index)}
-                  onMouseLeave={() => setHoveredIndex(null)}
-                  style={{ cursor: 'pointer' }}
-                />
-                {isHovered && (
-                  <text
-                    x={x}
-                    y={y - 4}
-                    className="text-[8px] font-bold fill-primary"
-                    textAnchor="middle"
-                  >
-                    {point.value}%
-                  </text>
-                )}
-              </g>
-            )
-          })}
-        </svg>
-
-        {/* Labels */}
-        {data.map((point, index) => {
-          const pos = getLabelPosition(index)
+    <div className="w-[400px] h-[400px] flex items-center justify-center shadow-radar" dir="rtl">
+      <svg 
+        width={size} 
+        height={size} 
+        viewBox={`0 0 ${size} ${size}`}
+        className="drop-shadow-lg"
+        aria-label="رادار تطابق العطور"
+        role="img"
+      >
+        {/* Grid - 5 levels */}
+        {[1, 2, 3, 4, 5].map((level) => {
+          const r = (radius * level) / 5
           return (
-            <span
-              key={index}
-              className={`absolute text-xs font-bold text-slate-800 pointer-events-none`}
-              style={{
-                left: pos.x,
-                top: pos.y,
-                transform: 'translate(-50%, -50%)',
-                textAlign: 'center' as const
-              }}
-            >
-              {point.label}
-            </span>
+            <motion.circle
+              key={`grid-${level}`}
+              cx={size / 2}
+              cy={size / 2}
+              r={r}
+              fill="none"
+              stroke="#5B4233"
+              strokeOpacity="0.1"
+              strokeWidth="1"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 + level * 0.1 }}
+            />
           )
         })}
-      </div>
+
+        {/* Axes */}
+        {points.map((point, i) => (
+          <line
+            key={`axis-${i}`}
+            x1={size / 2}
+            y1={size / 2}
+            x2={size / 2 + radius * Math.cos(point.angle)}
+            y2={size / 2 + radius * Math.sin(point.angle)}
+            stroke="#5B4233"
+            strokeOpacity="0.2"
+            strokeWidth="1"
+          />
+        ))}
+
+        {/* Main Polygon */}
+        <motion.polygon
+          points={polygonPath}
+          fill="rgba(192, 132, 26, 0.2)"
+          stroke="#c0841a"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: 1 }}
+          transition={{ duration: 2, ease: "easeInOut" }}
+        />
+
+        {/* Data Points + Labels */}
+        {points.map((point, i) => (
+          <g key={`point-${i}`}>
+            <motion.circle
+              cx={point.x}
+              cy={point.y}
+              r="8"
+              fill={point.color}
+              stroke="white"
+              strokeWidth="2"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 1.5 + i * 0.1 }}
+              whileHover={{ scale: 1.5 }}
+            />
+            <motion.text
+              x={point.x}
+              y={point.y - 25}
+              textAnchor="middle"
+              fill="#5B4233"
+              fontSize="12"
+              fontWeight="bold"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 2 + i * 0.1 }}
+            >
+              {point.name}
+            </motion.text>
+            <motion.text
+              x={point.x}
+              y={point.y + 5}
+              textAnchor="middle"
+              fill={point.color}
+              fontSize="14"
+              fontWeight="bold"
+            >
+              {point.score}%
+            </motion.text>
+          </g>
+        ))}
+      </svg>
     </div>
   )
 }
 
-export default RadarChart
+// Export sample data for testing
+export const RADAR_SAMPLE_DATA = [
+  { name: "فلورال", score: 85, color: "#10B981" },
+  { name: "خشبي", score: 75, color: "#F59E0B" },
+  { name: "حمضيات", score: 30, color: "#EF4444" },
+  { name: "شرقي", score: 45, color: "#3B82F6" },
+  { name: "منعش", score: 60, color: "#8B5CF6" },
+  { name: "توابل", score: 70, color: "#EC4899" },
+]
