@@ -1,206 +1,216 @@
 'use client'
-import React from 'react'
+import { motion } from 'framer-motion'
+import { useState } from 'react'
 
-interface TimelineStageProps {
-  stage: string
-  icon: string
-  title: string
-  subtitle: string
-  notes: string
-  matchPercentage: number
-  status: string
-  bgColor: string
-  delay?: number
+export interface TimelineStage {
+  score: number
+  status: 'safe' | 'warning' | 'danger'
+  notes?: string
+  stageName?: string
 }
 
-export function TimelineStage({ 
-  stage, 
-  icon, 
-  title, 
-  subtitle,
-  notes, 
-  matchPercentage, 
-  status,
-  bgColor,
-  delay = 0 
-}: TimelineStageProps) {
-  const getStatusColor = () => {
-    if (matchPercentage >= 90) return { bg: 'bg-green-100', text: 'text-green-600', bar: 'bg-green-500' };
-    if (matchPercentage >= 80) return { bg: 'bg-orange-100', text: 'text-orange-600', bar: 'bg-orange-500' };
-    return { bg: 'bg-red-100', text: 'text-red-600', bar: 'bg-red-500' };
-  };
+export interface PerfumeTimelineProps {
+  stages: TimelineStage[]
+  className?: string
+}
 
-  const colors = getStatusColor();
+export function PerfumeTimeline({ stages, className = '' }: PerfumeTimelineProps) {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+
+  const getStatusConfig = (status: 'safe' | 'warning' | 'danger') => {
+    switch (status) {
+      case 'safe':
+        return {
+          bg: 'bg-[#fef3c7]',
+          border: 'border-safe-green',
+          borderColor: '#10B981',
+          circleColors: ['#F8C8DC', '#D2B48C', '#90EE90'],
+          badge: 'bg-safe-green text-white'
+        }
+      case 'warning':
+        return {
+          bg: 'bg-[#dbeafe]',
+          border: 'border-warning-orange',
+          borderColor: '#F59E0B',
+          circleColors: ['#F8C8DC', '#D2B48C', '#90EE90'],
+          badge: 'bg-warning-orange text-white'
+        }
+      case 'danger':
+        return {
+          bg: 'bg-[#ecfdf5]',
+          border: 'border-danger-red',
+          borderColor: '#EF4444',
+          circleColors: ['#F8C8DC', '#D2B48C', '#90EE90'],
+          badge: 'bg-danger-red text-white'
+        }
+    }
+  }
+
+  const renderProgressCircle = (stage: TimelineStage, index: number) => {
+    const config = getStatusConfig(stage.status)
+    const circumference = 2 * Math.PI * 50 // r=50
+    const strokeDashoffset = circumference - (stage.score / 100) * circumference
+
+    return (
+      <svg 
+        viewBox="0 0 200 120" 
+        className="w-[200px] h-[120px] flex-shrink-0"
+        aria-label={`Progress circle showing ${stage.score}% match`}
+      >
+        {/* Background circles */}
+        <circle 
+          cx="100" 
+          cy="60" 
+          r="50" 
+          fill="none" 
+          stroke={config.circleColors[0]} 
+          strokeWidth="8" 
+          strokeDasharray={`${circumference} ${circumference}`}
+          strokeDashoffset={circumference - (stage.score / 100) * circumference}
+          className="transition-all duration-500"
+          transform="rotate(-90 100 60)"
+        />
+        <circle 
+          cx="100" 
+          cy="60" 
+          r="40" 
+          fill="none" 
+          stroke={config.circleColors[1]} 
+          strokeWidth="6" 
+          strokeDasharray={`${circumference * 0.8} ${circumference * 0.8}`}
+          strokeDashoffset={(circumference * 0.8) - ((stage.score / 100) * circumference * 0.8)}
+          className="transition-all duration-500"
+          transform="rotate(-90 100 60)"
+        />
+        <circle 
+          cx="100" 
+          cy="60" 
+          r="30" 
+          fill="none" 
+          stroke={config.circleColors[2]} 
+          strokeWidth="4" 
+          strokeDasharray={`${circumference * 0.6} ${circumference * 0.6}`}
+          strokeDashoffset={(circumference * 0.6) - ((stage.score / 100) * circumference * 0.6)}
+          className="transition-all duration-500"
+          transform="rotate(-90 100 60)"
+        />
+        
+        {/* Score text */}
+        <text 
+          x="100" 
+          y="65" 
+          textAnchor="middle" 
+          className="text-2xl font-bold fill-brown-text"
+          aria-hidden="true"
+        >
+          {stage.score}%
+        </text>
+      </svg>
+    )
+  }
 
   return (
     <div 
-      className="w-[320px] h-[120px] bg-white rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] border border-[#5B4233]/5 p-4 flex gap-4 hover:shadow-[0_10px_40px_rgba(0,0,0,0.15)] transition-all duration-300 group"
-      style={{ 
-        animation: `fadeInUp 0.5s ease-out ${delay}s both`,
-        fontFamily: '"Noto Sans Arabic", "Manrope", sans-serif'
-      }}
+      className={`w-[320px] h-[120px] bg-cream-bg rounded-2xl p-4 shadow-timeline flex flex-col gap-2 ${className}`}
+      dir="rtl"
+      role="region"
+      aria-label="Perfume compatibility timeline"
     >
-      {/* Icon Section */}
-      <div className={`w-20 h-full ${bgColor} rounded-xl flex flex-col items-center justify-center gap-1 shrink-0 group-hover:scale-105 transition-transform`}>
-        <span className="text-3xl">{icon}</span>
-        <span className="text-[10px] font-bold text-[#5B4233]/70 uppercase">{stage}</span>
-      </div>
+      {stages.map((stage, index) => {
+        const config = getStatusConfig(stage.status)
+        return (
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, scale: 0.9, x: -20 }}
+            animate={{ opacity: 1, scale: 1, x: 0 }}
+            transition={{ delay: index * 0.2, duration: 0.4 }}
+            whileHover={{ 
+              scale: 1.02, 
+              boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
+              zIndex: 10
+            }}
+            onHoverStart={() => setHoveredIndex(index)}
+            onHoverEnd={() => setHoveredIndex(null)}
+            className={`flex items-center gap-4 p-3 rounded-xl border-2 transition-all cursor-pointer ${
+              config.bg
+            } ${config.border} ${
+              hoveredIndex === index ? 'ring-2 ring-offset-2 ring-offset-cream-bg' : ''
+            }`}
+            style={{ borderColor: config.borderColor }}
+            role="group"
+            aria-label={`Stage ${index + 1}: ${stage.score}% match, ${stage.status} status`}
+          >
+            {/* SVG ProgressCircle 200x120 */}
+            <div className="flex-shrink-0 hidden sm:block">
+              {renderProgressCircle(stage, index)}
+            </div>
+            
+            {/* Mobile: Smaller circle */}
+            <div className="flex-shrink-0 sm:hidden">
+              <svg 
+                viewBox="0 0 200 120" 
+                className="w-16 h-16"
+                aria-label={`Progress circle showing ${stage.score}% match`}
+              >
+                <circle 
+                  cx="100" 
+                  cy="60" 
+                  r="50" 
+                  fill="none" 
+                  stroke={getStatusConfig(stage.status).circleColors[0]} 
+                  strokeWidth="8" 
+                  strokeDasharray={`${2 * Math.PI * 50} ${2 * Math.PI * 50}`}
+                  strokeDashoffset={(2 * Math.PI * 50) - ((stage.score / 100) * 2 * Math.PI * 50)}
+                  className="transition-all duration-500"
+                  transform="rotate(-90 100 60)"
+                />
+                <text 
+                  x="100" 
+                  y="65" 
+                  textAnchor="middle" 
+                  className="text-sm font-bold fill-brown-text"
+                  aria-hidden="true"
+                >
+                  {stage.score}%
+                </text>
+              </svg>
+            </div>
+            
+            {/* Stage Info */}
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-brown-text text-lg mb-1">
+                {stage.stageName || `Stage ${index + 1}`}: {stage.score}%
+              </p>
+              <span 
+                className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${config.badge}`}
+                aria-label={`Status: ${stage.status}`}
+              >
+                {stage.status.toUpperCase()}
+              </span>
+              {stage.notes && (
+                <p className="text-sm text-brown-text/70 mt-1 line-clamp-2" aria-label={`Notes: ${stage.notes}`}>
+                  {stage.notes}
+                </p>
+              )}
+            </div>
 
-      {/* Content Section */}
-      <div className="flex-1 flex flex-col justify-between min-w-0">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <h4 className="text-base font-bold text-[#5B4233] leading-tight truncate">{title}</h4>
-            <p className="text-[10px] text-[#5B4233]/60">{subtitle}</p>
-          </div>
-          <div className={`${colors.bg} ${colors.text} px-2 py-1 rounded-lg text-xs font-bold whitespace-nowrap shrink-0`}>
-            {matchPercentage}%
-          </div>
-        </div>
-
-        {/* Notes */}
-        <p className="text-xs text-[#5B4233]/70 leading-tight truncate">{notes}</p>
-
-        {/* Progress Bar */}
-        <div className="flex items-center gap-2">
-          <div className="flex-1 h-1.5 bg-[#5B4233]/10 rounded-full overflow-hidden">
-            <div 
-              className={`h-full ${colors.bar} rounded-full transition-all duration-1000`}
-              style={{ width: `${matchPercentage}%` }}
-            />
-          </div>
-          <span className="text-[10px] font-medium text-[#5B4233]/60">{status}</span>
-        </div>
-      </div>
+            {/* Hover Tooltip Glow */}
+            {hoveredIndex === index && stage.notes && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="absolute right-full mr-4 bg-brown-text text-white px-4 py-2 rounded-lg shadow-lg z-20 max-w-xs"
+                role="tooltip"
+                aria-live="polite"
+              >
+                <p className="text-sm whitespace-nowrap">{stage.notes}</p>
+                <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-brown-text"></div>
+              </motion.div>
+            )}
+          </motion.div>
+        )
+      })}
     </div>
-  );
+  )
 }
-
-interface PerfumeTimelineProps {
-  variant?: 'safe' | 'warning' | 'danger'
-  stages?: Array<{
-    stage: string
-    icon: string
-    title: string
-    subtitle: string
-    notes: string
-    matchPercentage: number
-    status: string
-    bgColor: string
-  }>
-}
-
-export function PerfumeTimeline({ variant = 'safe', stages }: PerfumeTimelineProps) {
-  const defaultTimelineData = {
-    safe: [
-      {
-        stage: 'Top',
-        icon: '🌅',
-        title: 'الافتتاحية',
-        subtitle: '0-30 دقيقة',
-        notes: 'برغموت • فلفل • ليمون',
-        matchPercentage: 92,
-        status: 'ممتاز ✨',
-        bgColor: 'bg-yellow-50'
-      },
-      {
-        stage: 'Heart',
-        icon: '💙',
-        title: 'القلب',
-        subtitle: '2-4 ساعات',
-        notes: 'لافندر • باتشولي • جيرانيوم',
-        matchPercentage: 88,
-        status: 'رائع 🌟',
-        bgColor: 'bg-blue-50'
-      },
-      {
-        stage: 'Base',
-        icon: '🎯',
-        title: 'القاعدة',
-        subtitle: '4+ ساعات',
-        notes: 'أمبروكسان • أرز • فيتيفر',
-        matchPercentage: 90,
-        status: 'مثالي 👌',
-        bgColor: 'bg-green-50'
-      }
-    ],
-    warning: [
-      {
-        stage: 'Top',
-        icon: '🌅',
-        title: 'الافتتاحية',
-        subtitle: '0-30 دقيقة',
-        notes: 'جريب فروت • زنجبيل • نعناع',
-        matchPercentage: 85,
-        status: 'جيد',
-        bgColor: 'bg-yellow-50'
-      },
-      {
-        stage: 'Heart',
-        icon: '💙',
-        title: 'القلب',
-        subtitle: '2-4 ساعات',
-        notes: 'ياسمين • ورد • قرنفل',
-        matchPercentage: 75,
-        status: 'متوسط ⚠️',
-        bgColor: 'bg-orange-50'
-      },
-      {
-        stage: 'Base',
-        icon: '🎯',
-        title: 'القاعدة',
-        subtitle: '4+ ساعات',
-        notes: 'عنبر • مسك • صندل',
-        matchPercentage: 82,
-        status: 'جيد',
-        bgColor: 'bg-green-50'
-      }
-    ],
-    danger: [
-      {
-        stage: 'Top',
-        icon: '🌅',
-        title: 'الافتتاحية',
-        subtitle: '0-30 دقيقة',
-        notes: 'ليمون • بهارات • فلفل أسود',
-        matchPercentage: 78,
-        status: 'جيد',
-        bgColor: 'bg-yellow-50'
-      },
-      {
-        stage: 'Heart',
-        icon: '💙',
-        title: 'القلب',
-        subtitle: '2-4 ساعات',
-        notes: 'الياسمين (حساسية) • ورد',
-        matchPercentage: 65,
-        status: 'تحذير ⚠️',
-        bgColor: 'bg-red-50'
-      },
-      {
-        stage: 'Base',
-        icon: '🎯',
-        title: 'القاعدة',
-        subtitle: '4+ ساعات',
-        notes: 'عود • فانيليا • تونكا',
-        matchPercentage: 72,
-        status: 'متوسط',
-        bgColor: 'bg-orange-50'
-      }
-    ]
-  };
-
-  const timelineData = stages || defaultTimelineData[variant];
-
-  return (
-    <div className="flex flex-col gap-6 items-center" style={{ fontFamily: '"Noto Sans Arabic", "Manrope", sans-serif' }}>
-      {/* Vertical Stack of Cards */}
-      {timelineData.map((stage, index) => (
-        <TimelineStage key={index} {...stage} delay={index * 0.2} />
-      ))}
-    </div>
-  );
-}
-
-export default PerfumeTimeline;
